@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { authAPI } from "../api";
 
-function LoginPage({ onLoginSuccess }) {
+export default function LoginPage({ onLoginSuccess }) {
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [role, setRole] = useState("user");
+  const [adminId, setAdminId] = useState("");
 
   // Login form
   const [loginEmail, setLoginEmail] = useState("");
@@ -22,7 +24,7 @@ function LoginPage({ onLoginSuccess }) {
     setError("");
 
     try {
-      const response = await authAPI.login(loginEmail, loginPassword);
+      const response = await authAPI.login(loginEmail, loginPassword, role, adminId);
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("userName", loginEmail.split("@")[0]);
       onLoginSuccess(loginEmail.split("@")[0]);
@@ -43,8 +45,11 @@ function LoginPage({ onLoginSuccess }) {
         regName,
         regEmail,
         regPassword,
-        regPhone
+        regPhone,
+        role,
+        adminId
       );
+
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("userName", regName);
       onLoginSuccess(regName);
@@ -55,116 +60,130 @@ function LoginPage({ onLoginSuccess }) {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.google.accounts.id.initialize({
+      client_id: "YOUR_GOOGLE_CLIENT_ID",
+      callback: handleGoogleResponse,
+    });
+    window.google.accounts.id.prompt();
+  };
+
+  const handleGoogleResponse = async (response) => {
+    try {
+      const res = await authAPI.googleLogin(response.credential);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("userName", res.data.name);
+      onLoginSuccess(res.data.name);
+    } catch (err) {
+      setError("Google login failed");
+    }
+  };
+
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background:
-          "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          width: "380px",
-          background: "rgba(255, 255, 255, 0.15)",
-          backdropFilter: "blur(10px)",
-          padding: "30px",
-          borderRadius: "15px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-          color: "#fff",
-          animation: "fadeIn 0.8s ease",
-        }}
-      >
-        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-          🏛️ Civic Samaj
-        </h2>
+    <div style={styles.container}>
+      <div style={styles.box}>
+        <h2 style={styles.title}>🏛 Civic Samaj</h2>
+
+        {/* ROLE SELECTION */}
+        <div style={styles.roleBox}>
+          <label style={styles.radioLabel}>
+            <input
+              type="radio"
+              value="user"
+              checked={role === "user"}
+              onChange={() => setRole("user")}
+            />
+            User
+          </label>
+
+          <label style={styles.radioLabel}>
+            <input
+              type="radio"
+              value="admin"
+              checked={role === "admin"}
+              onChange={() => setRole("admin")}
+            />
+            Admin
+          </label>
+        </div>
+
+        {/* SHOW ADMIN ID IF ADMIN SELECTED */}
+        {role === "admin" && (
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Admin ID</label>
+            <input
+              type="text"
+              style={styles.input}
+              placeholder="Enter Admin ID"
+              value={adminId}
+              onChange={(e) => setAdminId(e.target.value)}
+            />
+          </div>
+        )}
 
         {/* TABS */}
-        <div
-          style={{
-            display: "flex",
-            marginBottom: "20px",
-            borderRadius: "8px",
-            overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.2)",
-          }}
-        >
+        <div style={styles.tabs}>
           <button
             onClick={() => setActiveTab("login")}
             style={{
-              flex: 1,
-              padding: "10px",
-              background: activeTab === "login" ? "#fff" : "transparent",
-              color: activeTab === "login" ? "#000" : "#fff",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "600",
+              ...styles.tabButton,
+              ...(activeTab === "login" ? styles.activeTab : {}),
             }}
           >
             Login
           </button>
+
           <button
             onClick={() => setActiveTab("register")}
             style={{
-              flex: 1,
-              padding: "10px",
-              background: activeTab === "register" ? "#fff" : "transparent",
-              color: activeTab === "register" ? "#000" : "#fff",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "600",
+              ...styles.tabButton,
+              ...(activeTab === "register" ? styles.activeTab : {}),
             }}
           >
             Register
           </button>
         </div>
 
-        {error && (
-          <div
-            style={{
-              background: "#ff4d4d",
-              padding: "10px",
-              borderRadius: "5px",
-              marginBottom: "15px",
-              textAlign: "center",
-              color: "#fff",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        {/* ERROR */}
+        {error && <div style={styles.error}>{error}</div>}
 
         {/* LOGIN FORM */}
         {activeTab === "login" && (
           <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: "15px" }}>
-              <label>Email</label>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Email</label>
               <input
                 type="email"
+                style={styles.input}
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 required
-                style={inputStyle}
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
-              <label>Password</label>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Password</label>
               <input
                 type="password"
+                style={styles.input}
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 required
-                style={inputStyle}
               />
             </div>
 
-            <button style={btnPrimary} disabled={loading}>
+            <button style={styles.btn} type="submit" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
+            </button>
+
+            {/* GOOGLE BUTTON */}
+            <button type="button" style={styles.googleBtn} onClick={handleGoogleLogin}>
+              <img
+                src="/google.svg"
+                alt=""
+                style={{ height: 22, marginRight: 10 }}
+              />
+              Continue with Google
             </button>
           </form>
         )}
@@ -172,106 +191,186 @@ function LoginPage({ onLoginSuccess }) {
         {/* REGISTER FORM */}
         {activeTab === "register" && (
           <form onSubmit={handleRegister}>
-            <div style={{ marginBottom: "15px" }}>
-              <label>Full Name</label>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Full Name</label>
               <input
                 type="text"
+                style={styles.input}
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
                 required
-                style={inputStyle}
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
-              <label>Email</label>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Email</label>
               <input
                 type="email"
+                style={styles.input}
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 required
-                style={inputStyle}
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
-              <label>Phone</label>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Phone</label>
               <input
                 type="tel"
+                style={styles.input}
                 value={regPhone}
                 onChange={(e) => setRegPhone(e.target.value)}
-                pattern="[0-9]{10}"
-                style={inputStyle}
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
-              <label>Password</label>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Password</label>
               <input
                 type="password"
+                style={styles.input}
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
                 required
-                style={inputStyle}
               />
             </div>
 
-            <button style={btnPrimary} disabled={loading}>
+            <button style={styles.btn} type="submit" disabled={loading}>
               {loading ? "Registering..." : "Register"}
+            </button>
+
+            {/* GOOGLE BUTTON */}
+            <button type="button" style={styles.googleBtn} onClick={handleGoogleLogin}>
+              <img
+                src="/google.svg"
+                alt=""
+                style={{ height: 22, marginRight: 10 }}
+              />
+              Continue with Google
             </button>
           </form>
         )}
-
-        {/* GOOGLE LOGIN BUTTON */}
-        <button style={googleBtn}>
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
-            alt="google"
-            style={{ height: "22px", marginRight: "10px" }}
-          />
-          Continue with Google
-        </button>
       </div>
     </div>
   );
 }
 
-const inputStyle = {
-  width: "100%",
-  padding: "10px",
-  borderRadius: "8px",
-  border: "1px solid rgba(255,255,255,0.4)",
-  background: "rgba(255,255,255,0.2)",
-  color: "#fff",
-  outline: "none",
+/* ------------------ INLINE STYLE DEFINITIONS ------------------ */
+
+const styles = {
+  container: {
+    width: "100%",
+    height: "100vh",
+    background: "linear-gradient(to bottom, #cdd4c1, #e6eadf)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  box: {
+    width: 420,
+    background: "#ffffff",
+    padding: "35px 40px",
+    borderRadius: 16,
+    boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+    border: "2px solid #d6decf",
+  },
+
+  title: {
+    textAlign: "center",
+    marginBottom: 25,
+    fontSize: 28,
+    color: "#41512c",
+    fontWeight: 700,
+  },
+
+  roleBox: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 20,
+  },
+
+  radioLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#4f5c39",
+  },
+
+  tabs: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 15,
+    marginBottom: 20,
+    marginTop: 10,
+  },
+
+  tabButton: {
+    padding: "8px 18px",
+    borderRadius: 8,
+    background: "#e8eddf",
+    border: "1px solid #c8d2bc",
+    cursor: "pointer",
+    fontWeight: "600",
+    color: "#4d5938",
+  },
+
+  activeTab: {
+    background: "#8ca471",
+    color: "white",
+    border: "1px solid #748a5b",
+  },
+
+  formGroup: { marginBottom: 15 },
+
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#4d5938",
+  },
+
+  input: {
+    width: "100%",
+    padding: "10px",
+    marginTop: 5,
+    borderRadius: 8,
+    border: "1px solid #bfc8b5",
+    outline: "none",
+    fontSize: 15,
+  },
+
+  btn: {
+    width: "100%",
+    padding: "12px",
+    marginTop: 10,
+    background: "#6f8455",
+    color: "white",
+    fontWeight: "700",
+    borderRadius: 10,
+    border: "none",
+    cursor: "pointer",
+    transition: "0.3s",
+  },
+
+  googleBtn: {
+    width: "100%",
+    padding: "12px",
+    marginTop: 10,
+    background: "white",
+    border: "1px solid #dadada",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+
+  error: {
+    padding: "10px",
+    background: "#ffdddd",
+    borderRadius: 8,
+    color: "#cc0000",
+    marginBottom: 15,
+    textAlign: "center",
+  },
 };
-
-const btnPrimary = {
-  width: "100%",
-  padding: "12px",
-  background: "#4CAF50",
-  color: "#fff",
-  fontWeight: "700",
-  border: "none",
-  borderRadius: "8px",
-  cursor: "pointer",
-  marginTop: "10px",
-};
-
-const googleBtn = {
-  width: "100%",
-  padding: "12px",
-  background: "#fff",
-  color: "#444",
-  borderRadius: "8px",
-  border: "none",
-  cursor: "pointer",
-  marginTop: "15px",
-  fontWeight: "600",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-export default LoginPage;
-
