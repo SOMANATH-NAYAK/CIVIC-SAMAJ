@@ -80,7 +80,7 @@ function LoginPage({ onLoginSuccess }) {
         }}
       >
         <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-          🏛️ Civic Portal
+          🏛️ Civic Samaj
         </h2>
 
         {/* TABS */}
@@ -274,3 +274,4 @@ const googleBtn = {
 };
 
 export default LoginPage;
+
