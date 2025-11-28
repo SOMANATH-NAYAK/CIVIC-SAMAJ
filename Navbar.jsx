@@ -4,7 +4,7 @@ function Navbar({ isLoggedIn, userName, onLogout, onNavigate }) {
     return (
         <nav className="navbar">
             <div className="navbar-content">
-                <div className="logo">🏛️ Civic Portal</div>
+                <div className="logo">🏛️ Civic Samaj</div>
                 <div className="nav-links">
                     {isLoggedIn ? (
                         <>
@@ -39,3 +39,4 @@ function Navbar({ isLoggedIn, userName, onLogout, onNavigate }) {
 }
 
 export default Navbar;
+
